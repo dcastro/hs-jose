@@ -15,7 +15,6 @@
 {-# LANGUAGE NoMonomorphismRestriction #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE TemplateHaskell #-}
 
 {-|
 
@@ -108,11 +107,29 @@ import qualified Crypto.JOSE.JWA.JWS as JWA.JWS
 import qualified Crypto.JOSE.TH
 import qualified Crypto.JOSE.Types as Types
 import qualified Crypto.JOSE.Types.Internal as Types
+import Crypto.JOSE.Types
 
 
 -- | \"crv\" (Curve) Parameter
 --
-$(Crypto.JOSE.TH.deriveJOSEType "Crv" ["P-256", "P-384", "P-521", "secp256k1"])
+data Crv
+  = P_256 | P_384 | P_521 | Secp256k1
+  deriving (Eq, Ord, Show)
+instance FromJSON Crv where
+  parseJSON s
+    | (s == "P-256") = pure P_256
+    | (s == "P-384") = pure P_384
+    | (s == "P-521") = pure P_521
+    | (s == "secp256k1") = pure Secp256k1
+    | otherwise
+    = fail
+        ("unrecognised value; expected: "
+           ++ "[P-256,P-384,P-521,secp256k1]")
+instance ToJSON Crv where
+  toJSON P_256 = "P-256"
+  toJSON P_384 = "P-384"
+  toJSON P_521 = "P-521"
+  toJSON Secp256k1 = "secp256k1"
 
 
 -- | \"oth\" (Other Primes Info) Parameter
@@ -357,7 +374,27 @@ data RSAKeyParameters = RSAKeyParameters
   , _rsaPrivateKeyParameters :: Maybe RSAPrivateKeyParameters
   }
   deriving (Eq, Show)
-makeLenses ''RSAKeyParameters
+rsaE :: Lens' RSAKeyParameters Base64Integer
+rsaE f_a6Tcy (RSAKeyParameters x1_a6Tcz x2_a6TcA x3_a6TcB)
+  = fmap
+      (\ y1_a6TcC -> RSAKeyParameters x1_a6Tcz y1_a6TcC x3_a6TcB)
+      (f_a6Tcy x2_a6TcA)
+{-# INLINE rsaE #-}
+rsaN :: Lens' RSAKeyParameters Base64Integer
+rsaN f_a6TcD (RSAKeyParameters x1_a6TcE x2_a6TcF x3_a6TcG)
+  = fmap
+      (\ y1_a6TcH -> RSAKeyParameters y1_a6TcH x2_a6TcF x3_a6TcG)
+      (f_a6TcD x1_a6TcE)
+{-# INLINE rsaN #-}
+rsaPrivateKeyParameters ::
+  Lens' RSAKeyParameters (Maybe RSAPrivateKeyParameters)
+rsaPrivateKeyParameters
+  f_a6TcI
+  (RSAKeyParameters x1_a6TcJ x2_a6TcK x3_a6TcL)
+  = fmap
+      (\ y1_a6TcM -> RSAKeyParameters x1_a6TcJ x2_a6TcK y1_a6TcM)
+      (f_a6TcI x3_a6TcL)
+{-# INLINE rsaPrivateKeyParameters #-}
 
 instance FromJSON RSAKeyParameters where
   parseJSON = withObject "RSA" $ \o -> do

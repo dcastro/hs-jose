@@ -13,7 +13,6 @@
 -- limitations under the License.
 
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TemplateHaskell #-}
 
 {-|
 
@@ -167,11 +166,31 @@ instance ToJSON PBES2Parameters where
 
 -- | RFC 7518 §5  Cryptographic Algorithms for Content Encryption
 --
-$(deriveJOSEType "Enc" [
-  "A128CBC-HS256"   -- AES HMAC SHA authenticated encryption  Required
-  , "A192CBC-HS384" -- AES HMAC SHA authenticated encryption  Optional
-  , "A256CBC-HS512" -- AES HMAC SHA authenticated encryption  Required
-  , "A128GCM"       -- AES in Galois/Counter Mode             Recommended
-  , "A192GCM"       -- AES in Galois/Counter Mode             Optional
-  , "A256GCM"       -- AES in Galois/Counter Mode             Recommended
-  ])
+data Enc
+  = A128CBC_HS256 |
+    A192CBC_HS384 |
+    A256CBC_HS512 |
+    A128GCM |
+    A192GCM |
+    A256GCM
+  deriving (Eq, Ord, Show)
+instance FromJSON Enc where
+  parseJSON s
+    | (s == "A128CBC-HS256") = pure A128CBC_HS256
+    | (s == "A192CBC-HS384") = pure A192CBC_HS384
+    | (s == "A256CBC-HS512") = pure A256CBC_HS512
+    | (s == "A128GCM") = pure A128GCM
+    | (s == "A192GCM") = pure A192GCM
+    | (s == "A256GCM") = pure A256GCM
+    | otherwise
+    = fail
+        ("unrecognised value; expected: "
+           ++
+             "[A128CBC-HS256,A192CBC-HS384,A256CBC-HS512,A128GCM,A192GCM,A256GCM]")
+instance ToJSON Enc where
+  toJSON A128CBC_HS256 = "A128CBC-HS256"
+  toJSON A192CBC_HS384 = "A192CBC-HS384"
+  toJSON A256CBC_HS512 = "A256CBC-HS512"
+  toJSON A128GCM = "A128GCM"
+  toJSON A192GCM = "A192GCM"
+  toJSON A256GCM = "A256GCM"

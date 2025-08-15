@@ -15,7 +15,6 @@
 {-# LANGUAGE NoMonomorphismRestriction #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE ViewPatterns #-}
 
 {-|
@@ -125,6 +124,7 @@ import qualified Crypto.JOSE.TH
 import qualified Crypto.JOSE.Types as Types
 import Crypto.JOSE.Types.URI
 import qualified Crypto.JOSE.Types.Internal as Types
+import Crypto.JOSE.Types (SignedCertificate, Base64SHA1, Base64SHA256, URI)
 
 
 -- | RFC 7517 §4.4.  "alg" (Algorithm) Parameter
@@ -144,19 +144,58 @@ instance ToJSON JWKAlg where
   toJSON (JWSAlg alg) = toJSON alg
   toJSON (JWEAlg alg) = toJSON alg
 
-
 -- | RFC 7517 §4.3.  "key_ops" (Key Operations) Parameter
---
-$(Crypto.JOSE.TH.deriveJOSEType "KeyOp"
-  [ "sign", "verify", "encrypt", "decrypt"
-  , "wrapKey", "unwrapKey", "deriveKey", "deriveBits"
-  ])
+data KeyOp
+  = Sign
+  | Verify
+  | Encrypt
+  | Decrypt
+  | WrapKey
+  | UnwrapKey
+  | DeriveKey
+  | DeriveBits
+  deriving (Eq, Ord, Show)
 
+instance FromJSON KeyOp where
+  parseJSON s
+    | (s == "sign") = pure Sign
+    | (s == "verify") = pure Verify
+    | (s == "encrypt") = pure Encrypt
+    | (s == "decrypt") = pure Decrypt
+    | (s == "wrapKey") = pure WrapKey
+    | (s == "unwrapKey") = pure UnwrapKey
+    | (s == "deriveKey") = pure DeriveKey
+    | (s == "deriveBits") = pure DeriveBits
+    | otherwise =
+        fail
+          ( "unrecognised value; expected: "
+              ++ "[sign,verify,encrypt,decrypt,wrapKey,unwrapKey,deriveKey,deriveBits]"
+          )
+instance ToJSON KeyOp where
+  toJSON Sign = "sign"
+  toJSON Verify = "verify"
+  toJSON Encrypt = "encrypt"
+  toJSON Decrypt = "decrypt"
+  toJSON WrapKey = "wrapKey"
+  toJSON UnwrapKey = "unwrapKey"
+  toJSON DeriveKey = "deriveKey"
+  toJSON DeriveBits = "deriveBits"
 
 -- | RFC 7517 §4.2.  "use" (Public Key Use) Parameter
---
-$(Crypto.JOSE.TH.deriveJOSEType "KeyUse" ["sig", "enc"])
+data KeyUse
+  = Sig
+  | Enc
+  deriving (Eq, Ord, Show)
 
+instance FromJSON KeyUse where
+  parseJSON s
+    | (s == "sig") = pure Sig
+    | (s == "enc") = pure Enc
+    | otherwise =
+        fail ("unrecognised value; expected: " ++ "[sig, enc]")
+instance ToJSON KeyUse where
+  toJSON Sig = "sig"
+  toJSON Enc = "enc"
 
 -- | RFC 7517 §4.  JSON Web Key (JWK) Format
 --
@@ -173,12 +212,268 @@ data JWK = JWK
   , _jwkX5tS256 :: Maybe Types.Base64SHA256
   }
   deriving (Eq, Show)
-makeLenses ''JWK
 
--- | Get the certificate chain.  Not a lens, because the key of the first
--- certificate in the chain must correspond be the public key of the JWK.
--- To set the certificate chain use 'setJWKX5c'.
---
+jwkAlg :: Lens' JWK (Maybe JWKAlg)
+jwkAlg
+  f_a3sLV
+  ( JWK
+      x1_a3sLW
+      x2_a3sLX
+      x3_a3sLY
+      x4_a3sLZ
+      x5_a3sM0
+      x6_a3sM1
+      x7_a3sM2
+      x8_a3sM3
+      x9_a3sM4
+    ) =
+    fmap
+      ( \y1_a3sM5 ->
+          JWK
+            x1_a3sLW
+            x2_a3sLX
+            x3_a3sLY
+            y1_a3sM5
+            x5_a3sM0
+            x6_a3sM1
+            x7_a3sM2
+            x8_a3sM3
+            x9_a3sM4
+      )
+      (f_a3sLV x4_a3sLZ)
+{-# INLINE jwkAlg #-}
+jwkKeyOps :: Lens' JWK (Maybe [KeyOp])
+jwkKeyOps
+  f_a3sM6
+  ( JWK
+      x1_a3sM7
+      x2_a3sM8
+      x3_a3sM9
+      x4_a3sMa
+      x5_a3sMb
+      x6_a3sMc
+      x7_a3sMd
+      x8_a3sMe
+      x9_a3sMf
+    ) =
+    fmap
+      ( \y1_a3sMg ->
+          JWK
+            x1_a3sM7
+            x2_a3sM8
+            y1_a3sMg
+            x4_a3sMa
+            x5_a3sMb
+            x6_a3sMc
+            x7_a3sMd
+            x8_a3sMe
+            x9_a3sMf
+      )
+      (f_a3sM6 x3_a3sM9)
+{-# INLINE jwkKeyOps #-}
+jwkKid :: Lens' JWK (Maybe T.Text)
+jwkKid
+  f_a3sMh
+  ( JWK
+      x1_a3sMi
+      x2_a3sMj
+      x3_a3sMk
+      x4_a3sMl
+      x5_a3sMm
+      x6_a3sMn
+      x7_a3sMo
+      x8_a3sMp
+      x9_a3sMq
+    ) =
+    fmap
+      ( \y1_a3sMr ->
+          JWK
+            x1_a3sMi
+            x2_a3sMj
+            x3_a3sMk
+            x4_a3sMl
+            y1_a3sMr
+            x6_a3sMn
+            x7_a3sMo
+            x8_a3sMp
+            x9_a3sMq
+      )
+      (f_a3sMh x5_a3sMm)
+{-# INLINE jwkKid #-}
+jwkMaterial :: Lens' JWK KeyMaterial
+jwkMaterial
+  f_a3sMs
+  ( JWK
+      x1_a3sMt
+      x2_a3sMu
+      x3_a3sMv
+      x4_a3sMw
+      x5_a3sMx
+      x6_a3sMy
+      x7_a3sMz
+      x8_a3sMA
+      x9_a3sMB
+    ) =
+    fmap
+      ( \y1_a3sMC ->
+          JWK
+            y1_a3sMC
+            x2_a3sMu
+            x3_a3sMv
+            x4_a3sMw
+            x5_a3sMx
+            x6_a3sMy
+            x7_a3sMz
+            x8_a3sMA
+            x9_a3sMB
+      )
+      (f_a3sMs x1_a3sMt)
+{-# INLINE jwkMaterial #-}
+jwkUse :: Lens' JWK (Maybe KeyUse)
+jwkUse
+  f_a3sMD
+  ( JWK
+      x1_a3sME
+      x2_a3sMF
+      x3_a3sMG
+      x4_a3sMH
+      x5_a3sMI
+      x6_a3sMJ
+      x7_a3sMK
+      x8_a3sML
+      x9_a3sMM
+    ) =
+    fmap
+      ( \y1_a3sMN ->
+          JWK
+            x1_a3sME
+            y1_a3sMN
+            x3_a3sMG
+            x4_a3sMH
+            x5_a3sMI
+            x6_a3sMJ
+            x7_a3sMK
+            x8_a3sML
+            x9_a3sMM
+      )
+      (f_a3sMD x2_a3sMF)
+{-# INLINE jwkUse #-}
+jwkX5cRaw :: Lens' JWK (Maybe (NonEmpty SignedCertificate))
+jwkX5cRaw
+  f_a3sMO
+  ( JWK
+      x1_a3sMP
+      x2_a3sMQ
+      x3_a3sMR
+      x4_a3sMS
+      x5_a3sMT
+      x6_a3sMU
+      x7_a3sMV
+      x8_a3sMW
+      x9_a3sMX
+    ) =
+    fmap
+      ( \y1_a3sMY ->
+          JWK
+            x1_a3sMP
+            x2_a3sMQ
+            x3_a3sMR
+            x4_a3sMS
+            x5_a3sMT
+            x6_a3sMU
+            y1_a3sMY
+            x8_a3sMW
+            x9_a3sMX
+      )
+      (f_a3sMO x7_a3sMV)
+{-# INLINE jwkX5cRaw #-}
+jwkX5t :: Lens' JWK (Maybe Base64SHA1)
+jwkX5t
+  f_a3sMZ
+  ( JWK
+      x1_a3sN0
+      x2_a3sN1
+      x3_a3sN2
+      x4_a3sN3
+      x5_a3sN4
+      x6_a3sN5
+      x7_a3sN6
+      x8_a3sN7
+      x9_a3sN8
+    ) =
+    fmap
+      ( \y1_a3sN9 ->
+          JWK
+            x1_a3sN0
+            x2_a3sN1
+            x3_a3sN2
+            x4_a3sN3
+            x5_a3sN4
+            x6_a3sN5
+            x7_a3sN6
+            y1_a3sN9
+            x9_a3sN8
+      )
+      (f_a3sMZ x8_a3sN7)
+{-# INLINE jwkX5t #-}
+jwkX5tS256 :: Lens' JWK (Maybe Base64SHA256)
+jwkX5tS256
+  f_a3sNa
+  ( JWK
+      x1_a3sNb
+      x2_a3sNc
+      x3_a3sNd
+      x4_a3sNe
+      x5_a3sNf
+      x6_a3sNg
+      x7_a3sNh
+      x8_a3sNi
+      x9_a3sNj
+    ) =
+    fmap
+      ( \y1_a3sNk ->
+          JWK
+            x1_a3sNb
+            x2_a3sNc
+            x3_a3sNd
+            x4_a3sNe
+            x5_a3sNf
+            x6_a3sNg
+            x7_a3sNh
+            x8_a3sNi
+            y1_a3sNk
+      )
+      (f_a3sNa x9_a3sNj)
+{-# INLINE jwkX5tS256 #-}
+jwkX5u :: Lens' JWK (Maybe URI)
+jwkX5u
+  f_a3sNl
+  ( JWK
+      x1_a3sNm
+      x2_a3sNn
+      x3_a3sNo
+      x4_a3sNp
+      x5_a3sNq
+      x6_a3sNr
+      x7_a3sNs
+      x8_a3sNt
+      x9_a3sNu
+    ) =
+    fmap
+      ( \y1_a3sNv ->
+          JWK
+            x1_a3sNm
+            x2_a3sNn
+            x3_a3sNo
+            x4_a3sNp
+            x5_a3sNq
+            y1_a3sNv
+            x7_a3sNs
+            x8_a3sNt
+            x9_a3sNu
+      )
+      (f_a3sNl x6_a3sNr)
+{-# INLINE jwkX5u #-}
 jwkX5c :: Getter JWK (Maybe (NonEmpty X509.SignedCertificate))
 jwkX5c = jwkX5cRaw
 

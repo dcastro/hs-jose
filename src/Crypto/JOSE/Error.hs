@@ -12,8 +12,6 @@
 -- See the License for the specific language governing permissions and
 -- limitations under the License.
 
-{-# LANGUAGE TemplateHaskell #-}
-
 {-|
 
 JOSE error types and helpers.
@@ -50,6 +48,8 @@ import Control.Lens (Getter, to)
 import Control.Lens.TH (makeClassyPrisms, makePrisms)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding.Error as T
+import Control.Lens.Prism
+import Data.Text (Text)
 
 
 -- | The wrong number of parts were found when decoding a
@@ -88,7 +88,28 @@ data CompactDecodeError
   = CompactInvalidNumberOfParts InvalidNumberOfParts
   | CompactInvalidText CompactTextError
   deriving (Eq)
-makePrisms ''CompactDecodeError
+
+_CompactInvalidNumberOfParts ::
+  Prism' CompactDecodeError InvalidNumberOfParts
+_CompactInvalidNumberOfParts =
+  prism
+    (\x1_aBRR -> CompactInvalidNumberOfParts x1_aBRR)
+    ( \x_aBRS ->
+        case x_aBRS of
+          CompactInvalidNumberOfParts y1_aBRT -> Right y1_aBRT
+          _ -> Left x_aBRS
+    )
+{-# INLINE _CompactInvalidNumberOfParts #-}
+_CompactInvalidText :: Prism' CompactDecodeError CompactTextError
+_CompactInvalidText =
+  prism
+    (\x1_aBRU -> CompactInvalidText x1_aBRU)
+    ( \x_aBRV ->
+        case x_aBRV of
+          CompactInvalidText y1_aBRW -> Right y1_aBRW
+          _ -> Left x_aBRV
+    )
+{-# INLINE _CompactInvalidText #-}
 
 instance Show CompactDecodeError where
   show (CompactInvalidNumberOfParts e) = "Invalid number of parts: " <> show e
@@ -119,8 +140,151 @@ data Error
   -- ^ 'AllValidated' policy active, and there were no signatures on object
   --   that matched the allowed algorithms
   deriving (Eq, Show)
-makeClassyPrisms ''Error
 
+class AsError r_aNtA where
+  _Error :: Prism' r_aNtA Error
+  _AlgorithmNotImplemented :: Prism' r_aNtA ()
+  _AlgorithmMismatch :: Prism' r_aNtA String
+  _KeyMismatch :: Prism' r_aNtA Text
+  _KeySizeTooSmall :: Prism' r_aNtA ()
+  _OtherPrimesNotSupported :: Prism' r_aNtA ()
+  _RSAError :: Prism' r_aNtA RSA.Error
+  _CryptoError :: Prism' r_aNtA CryptoError
+  _CompactDecodeError :: Prism' r_aNtA CompactDecodeError
+  _JSONDecodeError :: Prism' r_aNtA String
+  _NoUsableKeys :: Prism' r_aNtA ()
+  _JWSCritUnprotected :: Prism' r_aNtA ()
+  _JWSNoValidSignatures :: Prism' r_aNtA ()
+  _JWSInvalidSignature :: Prism' r_aNtA ()
+  _JWSNoSignatures :: Prism' r_aNtA ()
+  _AlgorithmNotImplemented = (.) _Error _AlgorithmNotImplemented
+  _AlgorithmMismatch = (.) _Error _AlgorithmMismatch
+  _KeyMismatch = (.) _Error _KeyMismatch
+  _KeySizeTooSmall = (.) _Error _KeySizeTooSmall
+  _OtherPrimesNotSupported = (.) _Error _OtherPrimesNotSupported
+  _RSAError = (.) _Error _RSAError
+  _CryptoError = (.) _Error _CryptoError
+  _CompactDecodeError = (.) _Error _CompactDecodeError
+  _JSONDecodeError = (.) _Error _JSONDecodeError
+  _NoUsableKeys = (.) _Error _NoUsableKeys
+  _JWSCritUnprotected = (.) _Error _JWSCritUnprotected
+  _JWSNoValidSignatures = (.) _Error _JWSNoValidSignatures
+  _JWSInvalidSignature = (.) _Error _JWSInvalidSignature
+  _JWSNoSignatures = (.) _Error _JWSNoSignatures
+instance AsError Error where
+  _Error = id
+  _AlgorithmNotImplemented =
+    prism
+      (\() -> AlgorithmNotImplemented)
+      ( \x_aNtB ->
+          case x_aNtB of
+            AlgorithmNotImplemented -> Right ()
+            _ -> Left x_aNtB
+      )
+  _AlgorithmMismatch =
+    prism
+      (\x1_aNtC -> AlgorithmMismatch x1_aNtC)
+      ( \x_aNtD ->
+          case x_aNtD of
+            AlgorithmMismatch y1_aNtE -> Right y1_aNtE
+            _ -> Left x_aNtD
+      )
+  _KeyMismatch =
+    prism
+      (\x1_aNtF -> KeyMismatch x1_aNtF)
+      ( \x_aNtG ->
+          case x_aNtG of
+            KeyMismatch y1_aNtH -> Right y1_aNtH
+            _ -> Left x_aNtG
+      )
+  _KeySizeTooSmall =
+    prism
+      (\() -> KeySizeTooSmall)
+      ( \x_aNtI ->
+          case x_aNtI of
+            KeySizeTooSmall -> Right ()
+            _ -> Left x_aNtI
+      )
+  _OtherPrimesNotSupported =
+    prism
+      (\() -> OtherPrimesNotSupported)
+      ( \x_aNtJ ->
+          case x_aNtJ of
+            OtherPrimesNotSupported -> Right ()
+            _ -> Left x_aNtJ
+      )
+  _RSAError =
+    prism
+      (\x1_aNtK -> RSAError x1_aNtK)
+      ( \x_aNtL ->
+          case x_aNtL of
+            RSAError y1_aNtM -> Right y1_aNtM
+            _ -> Left x_aNtL
+      )
+  _CryptoError =
+    prism
+      (\x1_aNtN -> CryptoError x1_aNtN)
+      ( \x_aNtO ->
+          case x_aNtO of
+            CryptoError y1_aNtP -> Right y1_aNtP
+            _ -> Left x_aNtO
+      )
+  _CompactDecodeError =
+    prism
+      (\x1_aNtQ -> CompactDecodeError x1_aNtQ)
+      ( \x_aNtR ->
+          case x_aNtR of
+            CompactDecodeError y1_aNtS -> Right y1_aNtS
+            _ -> Left x_aNtR
+      )
+  _JSONDecodeError =
+    prism
+      (\x1_aNtT -> JSONDecodeError x1_aNtT)
+      ( \x_aNtU ->
+          case x_aNtU of
+            JSONDecodeError y1_aNtV -> Right y1_aNtV
+            _ -> Left x_aNtU
+      )
+  _NoUsableKeys =
+    prism
+      (\() -> NoUsableKeys)
+      ( \x_aNtW ->
+          case x_aNtW of
+            NoUsableKeys -> Right ()
+            _ -> Left x_aNtW
+      )
+  _JWSCritUnprotected =
+    prism
+      (\() -> JWSCritUnprotected)
+      ( \x_aNtX ->
+          case x_aNtX of
+            JWSCritUnprotected -> Right ()
+            _ -> Left x_aNtX
+      )
+  _JWSNoValidSignatures =
+    prism
+      (\() -> JWSNoValidSignatures)
+      ( \x_aNtY ->
+          case x_aNtY of
+            JWSNoValidSignatures -> Right ()
+            _ -> Left x_aNtY
+      )
+  _JWSInvalidSignature =
+    prism
+      (\() -> JWSInvalidSignature)
+      ( \x_aNtZ ->
+          case x_aNtZ of
+            JWSInvalidSignature -> Right ()
+            _ -> Left x_aNtZ
+      )
+  _JWSNoSignatures =
+    prism
+      (\() -> JWSNoSignatures)
+      ( \x_aNu0 ->
+          case x_aNu0 of
+            JWSNoSignatures -> Right ()
+            _ -> Left x_aNu0
+      )
 
 newtype JOSE e m a = JOSE (ExceptT e m a)
 

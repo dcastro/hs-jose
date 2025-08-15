@@ -13,7 +13,6 @@
 -- limitations under the License.
 
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TemplateHaskell #-}
 
 {-|
 
@@ -54,7 +53,13 @@ import Crypto.JOSE.Types.Internal
 --
 newtype Base64Integer = Base64Integer Integer
   deriving (Eq, Show)
-makePrisms ''Base64Integer
+
+_Base64Integer :: Iso' Base64Integer Integer
+_Base64Integer =
+  iso
+    (\(Base64Integer x1_a41cK) -> x1_a41cK)
+    (\x1_a41cM -> Base64Integer x1_a41cM)
+{-# INLINE _Base64Integer #-}
 
 instance FromJSON Base64Integer where
   parseJSON = withText "base64url integer" $ parseB64Url

@@ -13,7 +13,6 @@
 -- limitations under the License.
 
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE MonoLocalBinds #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
@@ -118,6 +117,8 @@ import Network.URI (parseURI)
 
 import Crypto.JOSE
 import Crypto.JOSE.Types
+import Control.Lens.Iso
+import Control.Lens.Prism
 
 {- $basic
 
@@ -205,7 +206,80 @@ data JWTError
   | JWTNotInAudience
   | JWTIssuedAtFuture
   deriving (Eq, Show)
-makeClassyPrisms ''JWTError
+class AsJWTError r_a1kcH where
+  _JWTError :: Prism' r_a1kcH JWTError
+  _JWSError :: Prism' r_a1kcH Error
+  _JWTClaimsSetDecodeError :: Prism' r_a1kcH String
+  _JWTExpired :: Prism' r_a1kcH ()
+  _JWTNotYetValid :: Prism' r_a1kcH ()
+  _JWTNotInIssuer :: Prism' r_a1kcH ()
+  _JWTNotInAudience :: Prism' r_a1kcH ()
+  _JWTIssuedAtFuture :: Prism' r_a1kcH ()
+  _JWSError = (.) _JWTError _JWSError
+  _JWTClaimsSetDecodeError = (.) _JWTError _JWTClaimsSetDecodeError
+  _JWTExpired = (.) _JWTError _JWTExpired
+  _JWTNotYetValid = (.) _JWTError _JWTNotYetValid
+  _JWTNotInIssuer = (.) _JWTError _JWTNotInIssuer
+  _JWTNotInAudience = (.) _JWTError _JWTNotInAudience
+  _JWTIssuedAtFuture = (.) _JWTError _JWTIssuedAtFuture
+instance AsJWTError JWTError where
+  _JWTError = id
+  _JWSError =
+    prism
+      (\x1_a1kcI -> JWSError x1_a1kcI)
+      ( \x_a1kcJ ->
+          case x_a1kcJ of
+            JWSError y1_a1kcK -> Right y1_a1kcK
+            _ -> Left x_a1kcJ
+      )
+  _JWTClaimsSetDecodeError =
+    prism
+      (\x1_a1kcL -> JWTClaimsSetDecodeError x1_a1kcL)
+      ( \x_a1kcM ->
+          case x_a1kcM of
+            JWTClaimsSetDecodeError y1_a1kcN -> Right y1_a1kcN
+            _ -> Left x_a1kcM
+      )
+  _JWTExpired =
+    prism
+      (\() -> JWTExpired)
+      ( \x_a1kcO ->
+          case x_a1kcO of
+            JWTExpired -> Right ()
+            _ -> Left x_a1kcO
+      )
+  _JWTNotYetValid =
+    prism
+      (\() -> JWTNotYetValid)
+      ( \x_a1kcP ->
+          case x_a1kcP of
+            JWTNotYetValid -> Right ()
+            _ -> Left x_a1kcP
+      )
+  _JWTNotInIssuer =
+    prism
+      (\() -> JWTNotInIssuer)
+      ( \x_a1kcQ ->
+          case x_a1kcQ of
+            JWTNotInIssuer -> Right ()
+            _ -> Left x_a1kcQ
+      )
+  _JWTNotInAudience =
+    prism
+      (\() -> JWTNotInAudience)
+      ( \x_a1kcR ->
+          case x_a1kcR of
+            JWTNotInAudience -> Right ()
+            _ -> Left x_a1kcR
+      )
+  _JWTIssuedAtFuture =
+    prism
+      (\() -> JWTIssuedAtFuture)
+      ( \x_a1kcS ->
+          case x_a1kcS of
+            JWTIssuedAtFuture -> Right ()
+            _ -> Left x_a1kcS
+      )
 
 instance AsError JWTError where
   _Error = _JWSError
@@ -260,7 +334,13 @@ instance ToJSON StringOrURI where
 --   1970-01-01T0:0:0Z UTC until the specified UTC date\/time.
 --
 newtype NumericDate = NumericDate UTCTime deriving (Eq, Ord, Show)
-makePrisms ''NumericDate
+
+_NumericDate :: Iso' NumericDate UTCTime
+_NumericDate =
+  iso
+    (\(NumericDate x1_a1yq5) -> x1_a1yq5)
+    (\x1_a1yq6 -> NumericDate x1_a1yq6)
+{-# INLINE _NumericDate #-}
 
 instance FromJSON NumericDate where
   parseJSON = withScientific "NumericDate" $
@@ -281,7 +361,13 @@ instance ToJSON NumericDate where
 -- string (some non-compliant implementations require this.)
 --
 newtype Audience = Audience [StringOrURI] deriving (Eq, Show)
-makePrisms ''Audience
+
+_Audience :: Iso' Audience [StringOrURI]
+_Audience =
+  iso
+    (\(Audience x1_a1USN) -> x1_a1USN)
+    (\x1_a1USO -> Audience x1_a1USO)
+{-# INLINE _Audience #-}
 
 instance FromJSON Audience where
   parseJSON v = Audience <$> (parseJSON v <|> fmap (:[]) (parseJSON v))
@@ -481,9 +567,135 @@ data JWTValidationSettings = JWTValidationSettings
   , _jwtValidationSettingsAudiencePredicate :: StringOrURI -> Bool
   , _jwtValidationSettingsIssuerPredicate :: StringOrURI -> Bool
   }
-makeClassy ''JWTValidationSettings
+class HasJWTValidationSettings c_a1Zd3 where
+  jWTValidationSettings :: Lens' c_a1Zd3 JWTValidationSettings
+  jwtValidationSettingsAllowedSkew :: Lens' c_a1Zd3 NominalDiffTime
+  {-# INLINE jwtValidationSettingsAllowedSkew #-}
+  jwtValidationSettingsAudiencePredicate ::
+    Lens' c_a1Zd3 (StringOrURI -> Bool)
+  {-# INLINE jwtValidationSettingsAudiencePredicate #-}
+  jwtValidationSettingsCheckIssuedAt :: Lens' c_a1Zd3 Bool
+  {-# INLINE jwtValidationSettingsCheckIssuedAt #-}
+  jwtValidationSettingsIssuerPredicate ::
+    Lens' c_a1Zd3 (StringOrURI -> Bool)
+  {-# INLINE jwtValidationSettingsIssuerPredicate #-}
+  jwtValidationSettingsValidationSettings ::
+    Lens' c_a1Zd3 ValidationSettings
+  {-# INLINE jwtValidationSettingsValidationSettings #-}
+  jwtValidationSettingsAllowedSkew =
+    (.) jWTValidationSettings jwtValidationSettingsAllowedSkew
+  jwtValidationSettingsAudiencePredicate =
+    (.) jWTValidationSettings jwtValidationSettingsAudiencePredicate
+  jwtValidationSettingsCheckIssuedAt =
+    (.) jWTValidationSettings jwtValidationSettingsCheckIssuedAt
+  jwtValidationSettingsIssuerPredicate =
+    (.) jWTValidationSettings jwtValidationSettingsIssuerPredicate
+  jwtValidationSettingsValidationSettings =
+    (.) jWTValidationSettings jwtValidationSettingsValidationSettings
+instance HasJWTValidationSettings JWTValidationSettings where
+  {-# INLINE jwtValidationSettingsAllowedSkew #-}
+  {-# INLINE jwtValidationSettingsAudiencePredicate #-}
+  {-# INLINE jwtValidationSettingsCheckIssuedAt #-}
+  {-# INLINE jwtValidationSettingsIssuerPredicate #-}
+  {-# INLINE jwtValidationSettingsValidationSettings #-}
+  jWTValidationSettings = id
+  jwtValidationSettingsAllowedSkew
+    f_a1Zd4
+    ( JWTValidationSettings
+        x1_a1Zd5
+        x2_a1Zd6
+        x3_a1Zd7
+        x4_a1Zd8
+        x5_a1Zd9
+      ) =
+      fmap
+        ( \y1_a1Zda ->
+            JWTValidationSettings
+              x1_a1Zd5
+              y1_a1Zda
+              x3_a1Zd7
+              x4_a1Zd8
+              x5_a1Zd9
+        )
+        (f_a1Zd4 x2_a1Zd6)
+  jwtValidationSettingsAudiencePredicate
+    f_a1Zdb
+    ( JWTValidationSettings
+        x1_a1Zdc
+        x2_a1Zdd
+        x3_a1Zde
+        x4_a1Zdf
+        x5_a1Zdg
+      ) =
+      fmap
+        ( \y1_a1Zdh ->
+            JWTValidationSettings
+              x1_a1Zdc
+              x2_a1Zdd
+              x3_a1Zde
+              y1_a1Zdh
+              x5_a1Zdg
+        )
+        (f_a1Zdb x4_a1Zdf)
+  jwtValidationSettingsCheckIssuedAt
+    f_a1Zdi
+    ( JWTValidationSettings
+        x1_a1Zdj
+        x2_a1Zdk
+        x3_a1Zdl
+        x4_a1Zdm
+        x5_a1Zdn
+      ) =
+      fmap
+        ( \y1_a1Zdo ->
+            JWTValidationSettings
+              x1_a1Zdj
+              x2_a1Zdk
+              y1_a1Zdo
+              x4_a1Zdm
+              x5_a1Zdn
+        )
+        (f_a1Zdi x3_a1Zdl)
+  jwtValidationSettingsIssuerPredicate
+    f_a1Zdp
+    ( JWTValidationSettings
+        x1_a1Zdq
+        x2_a1Zdr
+        x3_a1Zds
+        x4_a1Zdt
+        x5_a1Zdu
+      ) =
+      fmap
+        ( \y1_a1Zdv ->
+            JWTValidationSettings
+              x1_a1Zdq
+              x2_a1Zdr
+              x3_a1Zds
+              x4_a1Zdt
+              y1_a1Zdv
+        )
+        (f_a1Zdp x5_a1Zdu)
+  jwtValidationSettingsValidationSettings
+    f_a1Zdw
+    ( JWTValidationSettings
+        x1_a1Zdx
+        x2_a1Zdy
+        x3_a1Zdz
+        x4_a1ZdA
+        x5_a1ZdB
+      ) =
+      fmap
+        ( \y1_a1ZdC ->
+            JWTValidationSettings
+              y1_a1ZdC
+              x2_a1Zdy
+              x3_a1Zdz
+              x4_a1ZdA
+              x5_a1ZdB
+        )
+        (f_a1Zdw x1_a1Zdx)
 
-instance {-# OVERLAPPABLE #-} HasJWTValidationSettings a => HasValidationSettings a where
+instance {-# OVERLAPPABLE #-} (HasJWTValidationSettings a) => HasValidationSettings a where
   validationSettings = jwtValidationSettingsValidationSettings
 
 -- | Maximum allowed skew when validating the /nbf/, /exp/ and /iat/ claims.
