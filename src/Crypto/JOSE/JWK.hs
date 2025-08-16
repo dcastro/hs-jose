@@ -120,7 +120,6 @@ import Crypto.JOSE.Error
 import qualified Crypto.JOSE.JWA.JWE.Alg as JWA.JWE
 import Crypto.JOSE.JWA.JWK
 import qualified Crypto.JOSE.JWA.JWS as JWA.JWS
-import qualified Crypto.JOSE.TH
 import qualified Crypto.JOSE.Types as Types
 import Crypto.JOSE.Types.URI
 import qualified Crypto.JOSE.Types.Internal as Types

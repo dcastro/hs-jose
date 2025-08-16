@@ -30,7 +30,6 @@ module Crypto.JOSE.JWA.JWE
 import Data.Maybe (catMaybes)
 
 import Crypto.JOSE.JWK
-import Crypto.JOSE.TH
 import Crypto.JOSE.Types
 import Crypto.JOSE.Types.Internal (insertToObject)
 

@@ -89,7 +89,6 @@ library
     Crypto.JOSE.JWA.JWE.Alg
 
   other-modules:
-    Crypto.JOSE.TH
     Crypto.JOSE.Types.Internal
     Crypto.JOSE.Types.URI
 

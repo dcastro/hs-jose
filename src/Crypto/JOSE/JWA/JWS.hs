@@ -23,7 +23,6 @@ module Crypto.JOSE.JWA.JWS
   ( Alg(..)
   ) where
 
-import qualified Crypto.JOSE.TH
 import Data.Aeson (FromJSON(..), ToJSON(..))
 
 
